@@ -281,6 +281,25 @@ class MicroSeries(pd.Series):
         res = MicroSeries(res, weights=self.weights.copy(deep))
         return res
 
+    def drop(
+        self,
+        labels=None,
+        axis=0,
+        index=None,
+        columns=None,
+        level=None,
+        inplace=False,
+        errors="raise",
+    ):
+        if inplace:
+            raise NotImplementedError("inplace not yet implemented.")
+        res = super().drop(
+            labels, axis, index, columns, level, inplace, errors
+        )
+        # Define weights.
+        weights = self.weights.drop(labels)
+        return MicroSeries(res, weights=weights)
+
     def equals(self, other) -> bool:
         equal_values = super().equals(other)
         equal_weights = self.weights.equals(other.weights)
@@ -594,6 +613,28 @@ class MicroDataFrame(pd.DataFrame):
             if column != self.weights_col:
                 self._link_weights(column)
 
+    def drop(
+        self,
+        labels=None,
+        axis=0,
+        index=None,
+        columns=None,
+        level=None,
+        inplace=False,
+        errors="raise",
+    ):
+        if inplace:
+            raise NotImplementedError("inplace not yet implemented.")
+        res = super().drop(
+            labels, axis, index, columns, level, inplace, errors
+        )
+        # Define weights.
+        if axis == 0:
+            weights = self.weights.drop(labels)
+        else:  # If dropping columns, use full weights.
+            weights = self.weights
+        return MicroDataFrame(res, weights=weights)
+
     def set_weights(self, weights) -> None:
         """Sets the weights for the MicroDataFrame. If a string is received,
         it will be assumed to be the column name of the weight column.
@@ -641,9 +682,13 @@ class MicroDataFrame(pd.DataFrame):
         super().__setattr__(key, value)
         self.catch_series_relapse()
 
-    def reset_index(self):
-        res = super().reset_index()
-        res = MicroDataFrame(res, weights=self.weights)
+    def reset_index(
+        self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
+    ):
+        if inplace:
+            raise NotImplementedError("inplace not yet implemented.")
+        res = super().reset_index(level, drop, inplace, col_level, col_fill)
+        res = MicroDataFrame(res, weights=self.weights.reset_index(drop=True))
         return res
 
     def copy(self, deep=True):

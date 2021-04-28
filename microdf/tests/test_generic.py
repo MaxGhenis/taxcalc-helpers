@@ -1,4 +1,3 @@
-from microdf.generic import MicroDataFrame, MicroSeries
 import numpy as np
 import microdf as mdf
 import pandas as pd
@@ -78,7 +77,7 @@ def test_mean():
 def test_poverty_count():
     arr = np.array([10000, 20000, 50000])
     w = np.array([1123, 1144, 2211])
-    df = MicroDataFrame(weights=w)
+    df = mdf.MicroDataFrame(weights=w)
     df["income"] = arr
     df["threshold"] = 16000
     assert df.poverty_count("income", "threshold") == w[0]
@@ -122,14 +121,14 @@ def test_concat():
 
 def test_set_index():
     d = mdf.MicroDataFrame(dict(x=[1, 2, 3]), weights=[4, 5, 6])
-    assert d.x.__class__ == MicroSeries
+    assert isinstance(d.x, mdf.MicroSeries)
     d.index = [1, 2, 3]
-    assert d.x.__class__ == MicroSeries
+    assert isinstance(d.x, mdf.MicroSeries)
 
 
 def test_reset_index():
     d = mdf.MicroDataFrame(dict(x=[1, 2, 3]), weights=[4, 5, 6])
-    assert d.reset_index().__class__ == MicroDataFrame
+    assert isinstance(d.reset_index(), mdf.MicroDataFrame)
 
 
 def test_cumsum():
@@ -200,6 +199,26 @@ def test_subset():
     df_no_z_diff_weights = df_no_z.copy()
     df_no_z_diff_weights.weights += 1
     assert not df[["x", "y"]].equals(df_no_z_diff_weights)
+
+
+def test_drop():
+    d = mdf.MicroDataFrame({"x": [1, 2], "y": [3, 4]}, weights=[5, 6])
+    # Drop a row.
+    d_drop_row = d.drop(0)
+    assert isinstance(d_drop_row, mdf.MicroDataFrame)
+    assert d_drop_row.equals(
+        mdf.MicroDataFrame({"x": [2], "y": [4]}, weights=[6], index=[1])
+    )
+    # Drop a column.
+    d_drop_column = d.drop("y", axis=1)
+    assert isinstance(d_drop_column, mdf.MicroDataFrame)
+    assert d_drop_column.equals(
+        mdf.MicroDataFrame({"x": [1, 2]}, weights=[5, 6])
+    )
+    # Drop an item from a MicroSeries.
+    s_drop = d.x.drop(0)
+    assert isinstance(s_drop, mdf.MicroSeries)
+    assert s_drop.equals(mdf.MicroSeries([2], weights=[6]))
 
 
 def test_value_subset():
